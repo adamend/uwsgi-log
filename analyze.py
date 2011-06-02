@@ -18,7 +18,7 @@ line_re = re.compile(r'''
 (?P<url>[/\w-]+)
 .*
 generated\ (?P<bytes>\d+)\ bytes
-\ in\ (?P<processing_time>\d+)\ msecs
+\ in\ (?P<processing_ms>\d+)\ msecs
 ''', re.X)
 
 def parse_line(line):
@@ -26,7 +26,8 @@ def parse_line(line):
         match = line_re.match(line)
         d = match.groupdict()
         d['request_date'] = datetime.datetime(*time.strptime(d['request_date'])[:6])
-        d['processing_time'] = int(d['processing_time'])
+        d['processing_ms'] = int(d['processing_ms'])
+        print d
         return d
     except AttributeError:
         return line
@@ -54,7 +55,7 @@ def print_results(requests):
     start = requests[0]['request_date']
     end = requests[-1]['request_date']
     log_time = end - start
-    all_processing_time = sum([r['processing_time'] for r in requests])
+    all_processing_ms = sum([r['processing_ms'] for r in requests])
     grouped_by_url = group_by(requests, 'url', sort='count')
 
     print '===================='
@@ -62,20 +63,20 @@ def print_results(requests):
     print 'Log start:', start
     print 'Log end:', end
     print 'Total log time covered: %d seconds' % log_time.seconds
-    print 'Total processing time: %d seconds' % int(round(float(all_processing_time) / 1000.0))
+    print 'Total processing time: %d seconds' % int(round(float(all_processing_ms) / 1000.0))
     print 'Top 5 URLs:'
     for grouper, group in grouped_by_url[:5]:
         count = len(group)
         percent = (float(count) / float(num_requests)) * 100
-        total_time = sum([r['processing_time'] for r in group])
-        percent_of_all_processing_time = (float(total_time) / float(all_processing_time)) * 100
+        total_time = sum([r['processing_ms'] for r in group])
+        percent_of_all_processing_ms = (float(total_time) / float(all_processing_ms)) * 100
         average_time = float(total_time) / float(count)
         print grouper
         print '    requests:', count
         print '    %% of total: %.1f%%' % percent
         print '    total time: %d sec' % int(round(float(total_time) / 1000.0))
-        print '    %% of all processing time: %.1f%%' % percent_of_all_processing_time
-        print '    average time: %d msec' % average_time
+        print '    %% of all processing time: %.1f%%' % percent_of_all_processing_ms
+        print '    average time: %d msecs' % average_time
     print '===================='
 
 def print_errors(unparsed_lines):
